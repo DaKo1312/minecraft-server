@@ -77,6 +77,8 @@ Akademie.
 | `check_status.py` | Status check via [mcstatus](https://github.com/py-mine/mcstatus). Performs a Server List Ping and prints version, player count, MOTD and latency. |
 | `requirements.txt` | Pinned dependency of `check_status.py`. Installed into a local virtual environment, never into the image. |
 | `README.md` | This documentation. |
+| `docs/checklist.md` | The submission checklist of the course, with every requirement marked as done or open and a note on where it is met. Contains a table of the verification runs and their results. |
+| `docs/checklist.pdf` | Export of `docs/checklist.md` for handing in, identical in content. |
 
 Two directories are created at runtime and are intentionally untracked: `data/`
 holds the world, configuration and logs of the server; `.venv/` holds the
