@@ -81,11 +81,13 @@ console access and the restart behaviour.
 
 ## 2. Dokumentation
 
-- [x] Die Dokumentation des Codes, sowie des Projektes soll im Repository in Form einer README Datei stattfinden
-- [x] Die Dokumentationssprache für alle Projekte (und zugehörige Unterlagen) ist englisch
+> Die Dokumentation des Codes, sowie des Projektes soll im Repository in Form
+> einer README Datei stattfinden.
+> Die Dokumentationssprache für alle Projekte (und zugehörige Unterlagen) ist
+> englisch.
 
-**Notes.** `README.md` is the single place of documentation and is written in
-English, as are all comments in the `Dockerfile`, `entrypoint.sh`,
+**Notes.** Both are met. `README.md` is the single place of documentation and is
+written in English, as are all comments in the `Dockerfile`, `entrypoint.sh`,
 `docker-compose.yaml`, `.env.example` and `check_status.py`.
 
 ---
