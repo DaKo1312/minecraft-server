@@ -70,14 +70,12 @@ mount maps `./data` to `/data`, which holds the world, `server.properties`,
 - [x] Eine Sektion "Quickstart" sollte als Teil der README enthalten sein. Hier sollten kurz Voraussetzungen genannt und eine Schnellstart-Anleitung beschrieben sein
 - [x] Es ausführliche Variante der vorgenannten Sektion so als "Usage" enthalten sein. Hier soll genauer auf die Konfiguration und Konfigurierbarkeit eingegangen werden, d.h. es soll auch erklärt werden wie relevante Passagen modifiziert werden können, um andere Resultate zu erzielen
 
-**Notes.** The table of contents links to all 16 sections and was checked
-programmatically against the real headings. *Description* names the essential
-contents and the purpose. *Quickstart* lists the prerequisites and gets a server
-running in five steps. *Usage* has ten subsections covering the three
-configuration layers, every environment variable, secrets through `.env`,
-changing the published port, changing the Minecraft version including the Java
-requirement, persistence and backups, console access and operator rights, the
-restart policy and RCON.
+**Notes.** The table of contents was checked programmatically against the real
+headings. *Description* names the essential contents and the purpose.
+*Quickstart* lists the prerequisites and the commands to get a server running.
+*Usage* covers the configuration layers, every environment variable, secrets
+through `.env`, changing the port and the Minecraft version, persistence,
+console access and the restart behaviour.
 
 ---
 
@@ -172,24 +170,9 @@ the first row documents.
 
 ---
 
-## Extras beyond the checklist
+## Extras
 
-Mentioned here because the handout asks for extras to be named.
-
-- **Two-stage build with checksum verification.** The server application is
-  verified against Mojang's SHA1 checksum, and the download tools do not ship in
-  the final image.
-- **Unprivileged server process.** The entrypoint prepares the mounted volume as
-  root and then drops all privileges, so the server runs as a dedicated system
-  account.
-- **Clean shutdown.** The server is started with `exec` so that it becomes PID 1
-  and receives `SIGTERM` directly, which lets Minecraft save the world before the
-  container exits. `stop_grace_period` is raised to 120 seconds.
-- **Configuration merge instead of overwrite.** `entrypoint.sh` rewrites only the
-  keys it manages and preserves every other line of `server.properties`.
-- **Per-machine overrides.** `MINECRAFT_VERSION`, `MC_HOST_PORT` and
-  `JAVA_MEMORY` can be set in `.env`, so hosts with different resources share
-  identical tracked files.
-- **Status check script.** `check_status.py` reports version, player count, MOTD
-  and latency and returns a meaningful exit code, which makes it usable in
-  scripts.
+The handout asks for extras to be named briefly: the server application is
+verified against Mojang's SHA1 checksum at build time, the server process runs
+unprivileged, and it is started with `exec` so it receives `SIGTERM` as PID 1
+and saves the world on shutdown.
