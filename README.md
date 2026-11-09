@@ -1,7 +1,8 @@
 # Minecraft Server on Docker
 
-A vanilla **Minecraft Java Edition** server, built from a plain Debian base
-image and deployed with Docker Compose. No pre-built Minecraft image is used.
+A **Minecraft Java Edition** server with the Fabric mod loader and a small set
+of pinned server-side mods, built from a plain Debian base image and deployed
+with Docker Compose. No pre-built Minecraft image is used.
 
 ## Table of Contents
 
@@ -10,6 +11,7 @@ image and deployed with Docker Compose. No pre-built Minecraft image is used.
 - [Quickstart](#quickstart)
 - [Usage](#usage)
   - [Configuration](#configuration)
+  - [Mods](#mods)
   - [Secrets via .env](#secrets-via-env)
   - [Changing the port](#changing-the-port)
   - [Changing the Minecraft version](#changing-the-minecraft-version)
@@ -28,10 +30,15 @@ settings are changed through configuration instead of by editing files inside a
 running container.
 
 - **Two-stage build.** Stage one downloads `server.jar` from the official Mojang
-  metadata and verifies its SHA1 checksum; a mismatch fails the build. Stage two
-  receives only the verified file, so `curl` and `jq` never ship.
+  metadata, the Fabric mod loader and the mods, and verifies every one of them
+  against a published checksum; a mismatch fails the build. Stage two receives
+  only the verified files, so `curl` and `jq` never ship.
 - **Own base image.** `debian:trixie-slim` plus the headless Java runtime the
   version needs. Minecraft 26.3 requires Java 25.
+- **Modded, but still official.** Fabric runs on top of the verified Mojang
+  `server.jar` instead of replacing it. The mods are part of the image, not of
+  the volume, and all of them are server-side only, so an unmodified client can
+  join.
 - **Unprivileged.** The server runs as the system account `minecraft` (UID 999).
 - **Always startable.** Every setting has a default in the image.
 - **Persistent.** World, config and logs live in a bind mount on the host.
@@ -41,8 +48,9 @@ running container.
 
 | File | Description |
 |---|---|
-| `Dockerfile` | Two-stage build: downloads and verifies `server.jar`, installs the Java runtime, creates the unprivileged account, defines all defaults. |
-| `entrypoint.sh` | Writes `eula.txt` and the environment-driven keys of `server.properties`, enables RCON when a password exists, drops root and execs the server as PID 1. |
+| `Dockerfile` | Two-stage build: downloads and verifies `server.jar`, the Fabric loader and the mods, installs the Java runtime, creates the unprivileged account, defines all defaults. |
+| `mods.txt` | The mods that go into the image, each pinned to one version and one SHA512 checksum. |
+| `entrypoint.sh` | Writes `eula.txt`, the Fabric launcher properties and the environment-driven keys of `server.properties`, enables RCON when a password exists, drops root and execs the server as PID 1. |
 | `docker-compose.yaml` | The `mc-server` service: build args, published port, environment, optional `.env`, volume, restart policy. |
 | `.env.example` | Template for the untracked `.env` holding the critical configuration. |
 | `.gitignore` | Excludes runtime data, the real `.env`, virtual environments and credential files. |
@@ -119,6 +127,49 @@ Example — a creative server for 20 players:
 ```
 
 Apply with `docker compose up --detach`; no rebuild needed.
+
+### Mods
+
+The image ships the Fabric mod loader and four mods, chosen for a small cloud
+VM: they lower the CPU and memory the server needs and make its load
+measurable. All of them are server-side only, so an unmodified Minecraft client
+can join.
+
+| Mod | Why it is installed |
+|---|---|
+| Fabric API | Library the mods below build on; spark needs three of its modules. |
+| Lithium | Optimises the server tick loop without changing game behaviour. |
+| FerriteCore | Lowers the memory used for block states and chunk data. |
+| spark | Profiler: `spark tps` and `spark health` report tick rate, CPU and memory. |
+
+In the server console the commands are typed without a leading slash, as shown
+above; a game client needs `/spark tps`. See
+[Console and operator rights](#console-and-operator-rights) for how to reach
+the console.
+
+The loader does not replace the server application. `entrypoint.sh` writes
+`data/fabric-server-launcher.properties` with `serverJar` pointing at the
+verified Mojang `server.jar`, and passes `-Dfabric.addMods` so the mods are
+read out of the image instead of the volume. The image therefore decides which
+mods run, and no stale jar can survive in `data/`.
+
+Check what was loaded:
+
+```bash
+docker compose logs mc-server | grep --after-context 4 'Mods from'
+```
+
+To add or remove a mod, edit `mods.txt` and rebuild. Each line is
+`<SHA512>  <file name>  <URL>`; the SHA512 is shown on the mod's download page
+and the build fails if a file does not match it.
+
+```bash
+docker compose up --detach --build
+```
+
+Pick versions that match both the Minecraft version and the Fabric loader, and
+prefer server-side mods: a client-side mod would force every player to install
+it.
 
 ### Secrets via .env
 

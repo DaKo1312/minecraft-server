@@ -37,11 +37,12 @@ including this checklist and its PDF export.
 **Notes.** The build has two stages. Stage one installs `curl` and `jq`, reads
 the official Mojang version metadata that `minecraft.net/download/server`
 resolves to, downloads `server.jar` and verifies it against the published SHA1
-checksum; a mismatch fails the build. Stage two starts from `debian:trixie-slim`
-and installs the headless Java 25 runtime that Minecraft 26.3 requires, so all
-necessary packages are installed into a plain base image rather than inherited
-from a ready-made Minecraft image. `curl` and `jq` are absent from the shipped
-image.
+checksum; a mismatch fails the build. The same stage adds the Fabric mod loader
+and the mods pinned in `mods.txt`, each verified against its own published
+checksum. Stage two starts from `debian:trixie-slim` and installs the headless
+Java 25 runtime that Minecraft 26.3 requires, so all necessary packages are
+installed into a plain base image rather than inherited from a ready-made
+Minecraft image. `curl` and `jq` are absent from the shipped image.
 
 Every runtime setting has a default in the `ENV` block of the `Dockerfile`, and
 `entrypoint.sh` repeats the same defaults as a fallback. Verified by starting the
@@ -98,6 +99,8 @@ The server binary is taken from the Java Edition download that
 <https://www.minecraft.net/en-us/download/server> points to. The build resolves
 it through Mojang's official version metadata rather than a hard-coded link, so
 the download URL and its SHA1 checksum always belong to the requested version.
+The Fabric mod loader runs on top of that file instead of replacing it, so the
+server application itself still comes from the official download.
 
 ### Allgemeine Hinweise
 
@@ -178,3 +181,10 @@ The handout asks for extras to be named briefly: the server application is
 verified against Mojang's SHA1 checksum at build time, the server process runs
 unprivileged, and it is started with `exec` so it receives `SIGTERM` as PID 1
 and saves the world on shutdown.
+
+The server also runs a chosen set of mods on the Fabric loader: Lithium and
+FerriteCore lower the CPU and memory it needs, which is what a VM of this size
+calls for, and spark makes the load measurable from the console with
+`/spark tps`. Fabric API is their shared library. All four are server-side only
+and pinned by version and SHA512 checksum in `mods.txt`, so an unmodified
+client can join and the build stays reproducible.

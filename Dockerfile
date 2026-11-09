@@ -2,30 +2,49 @@
 # Minecraft Java Edition server image - built from scratch, no pre-built
 # Minecraft image is used anywhere in this file.
 #
-# Stage 1 "downloader" fetches the official server.jar from Mojang and
-# verifies it. Stage 2 "runtime" is the image that actually ships: it only
-# contains a Java runtime, the verified server.jar and the entrypoint, so
-# curl and jq never end up in the final image.
+# Stage 1 "downloader" fetches everything the server needs and verifies each
+# download against a published checksum: the official server.jar from Mojang,
+# the Fabric mod loader and the mods listed in mods.txt. Stage 2 "runtime" is
+# the image that actually ships: it only contains a Java runtime, the verified
+# files and the entrypoint, so curl, jq and the installer never end up in the
+# final image.
 # ===========================================================================
 
-# ---------------------------------------------------------------------------
-# Stage 1: download and verify the official server application
-# ---------------------------------------------------------------------------
-FROM debian:trixie-slim AS downloader
+# Java major version to install. Minecraft 26.3 requires Java 25. Declared
+# before the first FROM so that both stages can use the same value.
+ARG JAVA_MAJOR_VERSION=25
 
 # Minecraft version to build. Override it per build, see README.md -> Usage.
 ARG MINECRAFT_VERSION=26.3
+
+# ---------------------------------------------------------------------------
+# Stage 1: download and verify the server application, the mod loader and the
+# mods
+# ---------------------------------------------------------------------------
+FROM debian:trixie-slim AS downloader
+
+ARG JAVA_MAJOR_VERSION
+ARG MINECRAFT_VERSION
 
 # Entry point of Mojang's official version metadata, which is what
 # https://www.minecraft.net/en-us/download/server links to internally.
 ARG MOJANG_MANIFEST_URL=https://piston-meta.mojang.com/mc/game/version_manifest_v2.json
 
-# Tools needed for the download; they stay in this stage only.
+# Fabric mod loader. The installer is run below to assemble the launch jar and
+# the loader libraries; it is pinned by version and SHA256 checksum.
+ARG FABRIC_MAVEN_URL=https://maven.fabricmc.net
+ARG FABRIC_LOADER_VERSION=0.20.1
+ARG FABRIC_INSTALLER_VERSION=1.1.2
+ARG FABRIC_INSTALLER_SHA256=61e035bf7bf70153e127440ce34de47c9036f0a2d0c65d1529454bd35ceefe4f
+
+# Tools needed for the downloads and for running the Fabric installer; they
+# stay in this stage only.
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends \
         ca-certificates \
         curl \
         jq \
+        "openjdk-${JAVA_MAJOR_VERSION}-jre-headless" \
     && rm --recursive --force /var/lib/apt/lists/*
 
 WORKDIR /download
@@ -51,13 +70,44 @@ RUN set -eux; \
     curl --fail --silent --show-error --location "${SERVER_JAR_URL}" --output server.jar; \
     echo "${SERVER_JAR_SHA1}  server.jar" | sha1sum --check -
 
+# Fabric mod loader. The installer writes fabric-server-launch.jar plus the
+# loader libraries into /download/fabric. It does not replace server.jar: the
+# launch jar starts the verified Mojang application and loads the mods into
+# it, so the server application still comes from the official download.
+RUN set -eux; \
+    curl --fail --silent --show-error --location \
+        "${FABRIC_MAVEN_URL}/net/fabricmc/fabric-installer/${FABRIC_INSTALLER_VERSION}/fabric-installer-${FABRIC_INSTALLER_VERSION}.jar" \
+        --output fabric-installer.jar; \
+    echo "${FABRIC_INSTALLER_SHA256}  fabric-installer.jar" | sha256sum --check -; \
+    mkdir --parents /download/fabric; \
+    java -jar fabric-installer.jar server \
+        -mcversion "${MINECRAFT_VERSION}" \
+        -loader "${FABRIC_LOADER_VERSION}" \
+        -dir /download/fabric; \
+    test -f /download/fabric/fabric-server-launch.jar
+
+# Mods, pinned and checksummed in mods.txt. Each entry is
+# "<SHA512>  <file name>  <URL>"; comments and blank lines are skipped.
+COPY mods.txt /download/mods.txt
+RUN set -eux; \
+    mkdir --parents /download/mods; \
+    cd /download/mods; \
+    grep --invert-match --extended-regexp '^[[:space:]]*(#|$)' /download/mods.txt \
+    | while read -r MOD_SHA512 MOD_FILE MOD_URL; do \
+        echo "Downloading ${MOD_FILE}"; \
+        curl --fail --silent --show-error --location "${MOD_URL}" --output "${MOD_FILE}"; \
+        echo "${MOD_SHA512}  ${MOD_FILE}" | sha512sum --check -; \
+    done; \
+    MOD_COUNT="$( find /download/mods -name '*.jar' | wc --lines )"; \
+    echo "Installed ${MOD_COUNT} mods"; \
+    test "${MOD_COUNT}" -gt 0
+
 # ---------------------------------------------------------------------------
 # Stage 2: runtime image
 # ---------------------------------------------------------------------------
 FROM debian:trixie-slim AS runtime
 
-# Java major version installed below. Minecraft 26.3 requires Java 25.
-ARG JAVA_MAJOR_VERSION=25
+ARG JAVA_MAJOR_VERSION
 
 # Fixed paths and the unprivileged account the server runs under.
 ENV SERVER_HOME="/opt/minecraft" \
@@ -108,6 +158,15 @@ RUN groupadd --system "${SERVER_GROUP}" \
 
 # Verified server application from stage 1.
 COPY --from=downloader /download/server.jar "${SERVER_HOME}/server.jar"
+
+# Fabric mod loader. The relative class path inside fabric-server-launch.jar
+# resolves next to the jar itself, so "libraries" has to stay beside it.
+COPY --from=downloader /download/fabric/fabric-server-launch.jar "${SERVER_HOME}/fabric-server-launch.jar"
+COPY --from=downloader /download/fabric/libraries "${SERVER_HOME}/libraries"
+
+# Verified mods. They live in the image rather than in the volume, so the
+# image alone decides which mods run.
+COPY --from=downloader /download/mods "${SERVER_HOME}/mods"
 
 # Entrypoint. The sed call strips Windows line endings (CRLF), which would
 # otherwise make the script unusable when the repository is cloned on Windows.

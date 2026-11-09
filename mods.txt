@@ -1,0 +1,34 @@
+# ===========================================================================
+# Mods that are installed into the server image.
+#
+# Format, one mod per line:
+#   <SHA512 checksum>  <file name>  <download URL>
+#
+# Blank lines and lines starting with "#" are ignored.
+#
+# Every mod is pinned to an exact version and verified against its SHA512
+# checksum while the image is built, so a build either produces exactly these
+# files or fails. To add or remove a mod, edit this file and rebuild the
+# image; see README.md -> Usage -> Mods.
+#
+# The mods were chosen for a small cloud VM: they reduce the CPU and memory
+# the server needs and make its load measurable. All four are server-side
+# only, so an unmodified Minecraft client can still join.
+# ===========================================================================
+
+# Fabric API 0.166.0+26.3 - the library the mods below build on. spark needs
+# its fabric-api-base, fabric-command-api-v2 and fabric-lifecycle-events-v1
+# modules.
+de0d1a502cfcfcc594e0338e91c2fcf92a1239d47904ac2c3c50980ee132c676dba6abd81cd9449cdb0383657683c286f5bfc5c1bc1609c6b13bd569d36351d2  fabric-api-0.166.0+26.3.jar  https://cdn.modrinth.com/data/P7dR8mSH/versions/998R2rNP/fabric-api-0.166.0%2B26.3.jar
+
+# Lithium 0.26.3 - optimises the server tick loop without changing any game
+# behaviour.
+2ca92fb530135d2baddf0ba4cc4f93976234876a38c4aa02b487b2552400f005afcfbeebf5373fb4396fe2020537a42d7597b8da5a52b904355ef51d5fef07ad  lithium-fabric-0.26.3+mc26.3.jar  https://cdn.modrinth.com/data/gvQqBUqZ/versions/fWv5bnZk/lithium-fabric-0.26.3%2Bmc26.3.jar
+
+# FerriteCore 9.0.0 - lowers the memory the server needs for block states and
+# chunk data, which matters on a VM with little RAM.
+d81fa97e11784c19d42f89c2f433831d007603dd7193cee45fa177e4a6a9c52b384b198586e04a0f7f63cd996fed713322578bde9a8db57e1188854ae5cbe584  ferritecore-9.0.0-fabric.jar  https://cdn.modrinth.com/data/uXXizFIs/versions/d5ddUdiB/ferritecore-9.0.0-fabric.jar
+
+# spark 1.10.187 - profiler and monitoring. "/spark tps" and "/spark health"
+# report tick rate, CPU and memory from the server console.
+c74bf5d5a16b2445ec6ea717eac756412b272a8015e91f91a7bf5a27e6f2f99c4a11878d434510f941f37b0344b3a7d1ba0dd6c34e80642762c48fb6e9a93894  spark-1.10.187-fabric.jar  https://cdn.modrinth.com/data/l6YH9Als/versions/e3hsPc1o/spark-1.10.187-fabric.jar

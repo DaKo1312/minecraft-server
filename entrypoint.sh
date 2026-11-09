@@ -4,11 +4,12 @@
 #
 # What it does, in order:
 #   1. Accept the Minecraft EULA (required by the server application).
-#   2. Write the settings that come from environment variables into
+#   2. Tell the Fabric mod loader which server application to start.
+#   3. Write the settings that come from environment variables into
 #      /data/server.properties. Keys that are NOT managed here are left
 #      untouched, so manual edits and the world survive every restart.
-#   3. Enable RCON only when a password was supplied via the .env file.
-#   4. Hand ownership of the data directory to the unprivileged account and
+#   4. Enable RCON only when a password was supplied via the .env file.
+#   5. Hand ownership of the data directory to the unprivileged account and
 #      start the server as that account.
 #
 # The server replaces this script via "exec", so it becomes PID 1 and
@@ -47,7 +48,10 @@ RCON_PORT="${RCON_PORT:-25575}"
 RCON_PASSWORD="${RCON_PASSWORD:-}"
 
 SERVER_JAR="${SERVER_HOME}/server.jar"
+LAUNCH_JAR="${SERVER_HOME}/fabric-server-launch.jar"
+MODS_DIR="${SERVER_HOME}/mods"
 PROPERTIES_FILE="${DATA_DIR}/server.properties"
+LAUNCHER_PROPERTIES_FILE="${DATA_DIR}/fabric-server-launcher.properties"
 EULA_FILE="${DATA_DIR}/eula.txt"
 
 log() {
@@ -79,10 +83,16 @@ set_property() {
 }
 
 # ---------------------------------------------------------------------------
-# Sanity check: without the server application there is nothing to start.
+# Sanity check: without the server application and the mod loader there is
+# nothing to start.
 # ---------------------------------------------------------------------------
 if [ ! -f "${SERVER_JAR}" ]; then
     log "ERROR: server application not found at ${SERVER_JAR}"
+    exit 1
+fi
+
+if [ ! -f "${LAUNCH_JAR}" ]; then
+    log "ERROR: Fabric launch jar not found at ${LAUNCH_JAR}"
     exit 1
 fi
 
@@ -95,7 +105,32 @@ log "Accepting the Minecraft EULA (EULA=${EULA})"
 printf 'eula=%s\n' "${EULA}" > "${EULA_FILE}"
 
 # ---------------------------------------------------------------------------
-# 2. Managed settings from environment variables
+# 2. Fabric
+#
+# The loader reads fabric-server-launcher.properties from the working
+# directory to find the server application it should start. Pointing it at the
+# verified Mojang server.jar is what keeps the official download in use and
+# stops the loader from fetching its own copy.
+#
+# The mods are loaded straight out of the image instead of from the volume, so
+# the image alone decides which mods run and no stale jar can survive in
+# ./data after it was removed from mods.txt.
+# ---------------------------------------------------------------------------
+log "Fabric loader will start the server application at ${SERVER_JAR}"
+printf 'serverJar=%s\n' "${SERVER_JAR}" > "${LAUNCHER_PROPERTIES_FILE}"
+
+if [ -d "${MODS_DIR}" ]; then
+    log "Mods from ${MODS_DIR}:"
+    for MOD_PATH in "${MODS_DIR}"/*.jar; do
+        [ -f "${MOD_PATH}" ] || continue
+        log "  - $( basename "${MOD_PATH}" )"
+    done
+else
+    log "No mods directory at ${MODS_DIR}, starting without mods"
+fi
+
+# ---------------------------------------------------------------------------
+# 3. Managed settings from environment variables
 # ---------------------------------------------------------------------------
 if [ -f "${PROPERTIES_FILE}" ]; then
     log "Updating managed keys in ${PROPERTIES_FILE} (other keys are kept)"
@@ -118,7 +153,7 @@ set_property 'pvp'                   "${PVP}"
 set_property 'enable-command-block'  "${ENABLE_COMMAND_BLOCK}"
 
 # ---------------------------------------------------------------------------
-# 3. RCON - only switched on when a password was provided through .env
+# 4. RCON - only switched on when a password was provided through .env
 # ---------------------------------------------------------------------------
 if [ -n "${RCON_PASSWORD}" ]; then
     log "RCON enabled on container-internal port ${RCON_PORT}"
@@ -132,7 +167,7 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 4. Start the server
+# 5. Start the server
 # ---------------------------------------------------------------------------
 JAVA_OPTS_ARRAY=()
 if [ -n "${JAVA_OPTS}" ]; then
@@ -153,8 +188,9 @@ if [ "$( id --user )" -eq 0 ]; then
         java \
             -Xms"${JAVA_MEMORY}" \
             -Xmx"${JAVA_MEMORY}" \
+            -Dfabric.addMods="${MODS_DIR}" \
             "${JAVA_OPTS_ARRAY[@]}" \
-            -jar "${SERVER_JAR}" \
+            -jar "${LAUNCH_JAR}" \
             --nogui
 fi
 
@@ -164,6 +200,7 @@ log "Running as UID $( id --user ), skipping privilege drop"
 exec java \
     -Xms"${JAVA_MEMORY}" \
     -Xmx"${JAVA_MEMORY}" \
+    -Dfabric.addMods="${MODS_DIR}" \
     "${JAVA_OPTS_ARRAY[@]}" \
-    -jar "${SERVER_JAR}" \
+    -jar "${LAUNCH_JAR}" \
     --nogui
