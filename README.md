@@ -16,6 +16,7 @@ image and deployed with Docker Compose. No pre-built Minecraft image is used.
   - [Persistence and backups](#persistence-and-backups)
   - [Console and operator rights](#console-and-operator-rights)
   - [Restart behaviour](#restart-behaviour)
+- [Testing](#testing)
 
 ## Description
 
@@ -198,5 +199,49 @@ On `docker compose stop` the server receives `SIGTERM` directly, because
 closes at the same moment, so the last log lines are usually cut off while the
 save still completes.
 
-The verification runs for the checklist are recorded in
+## Testing
+
+**Reachable on port 8888.** Run this from a machine that is not the server, so
+the test really crosses the internet. It performs the same Server List Ping as
+the game client and exits `0` on success, `1` on failure:
+
+```bash
+python -m venv .venv && . .venv/bin/activate
+pip install --requirement requirements.txt
+python check_status.py <SERVER_IP>
+```
+
+```
+OK      <SERVER_IP>:8888 is online
+        version:  26.3
+        players:  0/10
+        motd:     Minecraft Server (Docker)
+        latency:  14 ms
+```
+
+Alternatively add the server as `<SERVER_IP>:8888` in the Minecraft Java client
+and join.
+
+**Data survives a restart.** Build a block, then recreate the container:
+
+```bash
+docker compose down && docker compose up --detach
+docker compose logs mc-server | grep -c 'No existing world data'   # expect 0
+```
+
+A count of `0` means the existing world was reused instead of regenerated.
+
+**Containers restart after a failure.** `docker kill` counts as a deliberate
+stop and does not trigger the policy, so provoke a real startup failure:
+
+```bash
+docker exec --user 0 mc-server mv /opt/minecraft/server.jar /opt/hidden.jar
+docker restart mc-server
+docker inspect --format 'restarts={{.RestartCount}} exit={{.State.ExitCode}}' mc-server
+docker compose down && docker compose up --detach --force-recreate   # restore
+```
+
+`RestartCount` rises while `ExitCode` stays `1`.
+
+The results of these runs are recorded in
 [docs/checklist.md](docs/checklist.md).
