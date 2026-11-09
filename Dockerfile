@@ -135,6 +135,7 @@ ENV EULA="true" \
     SPAWN_PROTECTION="16" \
     ONLINE_MODE="true" \
     PVP="true" \
+    WHITE_LIST="false" \
     ENABLE_COMMAND_BLOCK="false" \
     RCON_PORT="25575" \
     RCON_PASSWORD=""

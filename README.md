@@ -115,6 +115,7 @@ lasting effect — change it in `docker-compose.yaml` instead.
 | `SPAWN_PROTECTION` | `16` | Radius only operators may edit; `0` disables. |
 | `ONLINE_MODE` | `true` | Verifies accounts with Mojang. Keep enabled. |
 | `PVP` | `true` | Players can damage each other. |
+| `WHITE_LIST` | `false` | Restricts logins to the names in `data/whitelist.json`. Minecraft 26.3 turns this on by default, which locks out every player; the default here keeps the server joinable. |
 | `ENABLE_COMMAND_BLOCK` | `false` | Allows command blocks. |
 | `RCON_PORT` | `25575` | Container-internal RCON port, never published. |
 
@@ -149,9 +150,13 @@ the console.
 
 The loader does not replace the server application. `entrypoint.sh` writes
 `data/fabric-server-launcher.properties` with `serverJar` pointing at the
-verified Mojang `server.jar`, and passes `-Dfabric.addMods` so the mods are
-read out of the image instead of the volume. The image therefore decides which
-mods run, and no stale jar can survive in `data/`.
+verified Mojang `server.jar`, and passes `-Dfabric.addMods` so the four mods
+above are loaded straight out of the image. They are part of the image, not of
+the volume, which is why a rebuild is what changes them.
+
+Fabric also reads `data/mods`, which stays empty here. A jar dropped in there
+is loaded as well, which is handy for trying a mod out, but it is not
+reproducible: anything that should stay belongs in `mods.txt`.
 
 Check what was loaded:
 
@@ -308,3 +313,5 @@ The results of these runs are recorded in
 - `server.jar` is verified against the SHA1 checksum from Mojang at build time.
 - Only the game port is published. RCON stays internal and is off by default.
 - `ONLINE_MODE` defaults to `true`, so accounts are verified with Mojang.
+- The server is open to any verified account. To limit it to known players, set
+  `WHITE_LIST=true` and add them to `data/whitelist.json`.
