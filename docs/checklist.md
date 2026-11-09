@@ -161,12 +161,15 @@ Docker Compose v5.6.1). All checks below were executed against that deployment.
 | Reachable on port 8888 | `check_status.py <VM_IP>` run from a different machine over the internet | answered: version 26.3, 0/10 players, 14 ms latency |
 | Script-based connection | `check_status.py`, which performs a Server List Ping through `mcstatus` | exit code `0` |
 | World survives a restart | marker file placed in the world, then `docker compose down` followed by `up` | marker present, and `No existing world data` appears `0` times, so the world was reused rather than regenerated |
-| Configuration survives a restart | `spawn-monsters=false` set by hand in `server.properties`, then container recreated | key still present; keys managed by environment variables are rewritten from the environment by design, which is documented in the README |
+| Configuration survives a restart | `allow-flight=true` set by hand in `server.properties`, then container recreated | key still `true`; keys managed by environment variables are rewritten from the environment by design, which is documented in the README |
 | Restart after a failure | server application moved away to force a non-zero exit, then `docker restart` | `RestartCount` rose to `7` with `ExitCode=1`; container restored from the unmodified image afterwards |
 | Restart survives a host reboot | `systemctl is-enabled docker` together with `restart: unless-stopped` | `enabled`, so the container comes back after a reboot of the VM |
 | Server always starts | image started with no environment, no `.env` and no volume | reached `Done` after 12 seconds |
 | Process is unprivileged | `grep ^Uid: /proc/1/status` inside the container | `999`, the `minecraft` account, not `0` |
 | Server application is authentic | SHA1 comparison during the build | `server.jar: OK` |
+| Mods are authentic | SHA512 comparison during the build | one `OK` per entry in `mods.txt` |
+| Mods are loaded | the Fabric loader's mod list in the container log | `Loading 46 mods`, among them Fabric API, Lithium, FerriteCore and spark; Fabric API alone ships as many small modules |
+| The profiler answers | `spark tps` typed into the server console | `20.0` tick rate together with tick durations and CPU usage |
 | Clean shutdown saves the world | modification time of `world/level.dat` before and after `docker compose stop` | rewritten at the moment of the stop; the final log lines are cut off by the TTY while the save itself completes |
 
 The optional item is left unchecked because joining with the game client is
