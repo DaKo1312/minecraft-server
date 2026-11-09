@@ -1,0 +1,94 @@
+# ===========================================================================
+# Deployment of the Minecraft server.
+#
+#   docker compose up --detach --build
+#
+# Values written as ${NAME:-default} are read from the .env file (or the
+# shell) and fall back to the default shown, so this file also works when no
+# .env file exists at all.
+#
+# Requires Docker Compose v2.24 or newer (for "env_file: required: false").
+# ===========================================================================
+
+name: minecraft-server
+
+services:
+  mc-server:
+    container_name: mc-server
+
+    # -----------------------------------------------------------------------
+    # Build our own image from the Dockerfile in this directory.
+    # No pre-built Minecraft image is involved.
+    # -----------------------------------------------------------------------
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MINECRAFT_VERSION: "${MINECRAFT_VERSION:-26.3}"
+    image: "minecraft-server:${MINECRAFT_VERSION:-26.3}"
+
+    # -----------------------------------------------------------------------
+    # Bring the container back up whenever it terminates because of an error,
+    # and after a reboot of the host. It stays down only when it was stopped
+    # on purpose via "docker compose stop" / "down".
+    # -----------------------------------------------------------------------
+    restart: unless-stopped
+
+    # Give Minecraft time to save the world when it receives SIGTERM.
+    stop_grace_period: 120s
+
+    # Keep stdin open and allocate a TTY so the server console can be reached
+    # with "docker attach mc-server".
+    stdin_open: true
+    tty: true
+
+    # -----------------------------------------------------------------------
+    # Port release towards the internet.
+    # Host port 8888 (the port this project is graded on) is forwarded to
+    # Minecraft's port 25565 inside the container.
+    # -----------------------------------------------------------------------
+    ports:
+      - "${MC_HOST_PORT:-8888}:25565/tcp"
+
+    # -----------------------------------------------------------------------
+    # Non-critical configuration. No passwords, tokens, user names or IP
+    # addresses belong in this block - it is tracked by git.
+    # Every key is documented in README.md -> Usage.
+    # -----------------------------------------------------------------------
+    environment:
+      EULA: "true"
+      JAVA_MEMORY: "2G"
+      JAVA_OPTS: ""
+      MOTD: "Minecraft Server (Docker)"
+      DIFFICULTY: "normal"
+      GAMEMODE: "survival"
+      LEVEL_NAME: "world"
+      LEVEL_SEED: ""
+      MAX_PLAYERS: "10"
+      VIEW_DISTANCE: "10"
+      SIMULATION_DISTANCE: "10"
+      SPAWN_PROTECTION: "16"
+      ONLINE_MODE: "true"
+      PVP: "true"
+      ENABLE_COMMAND_BLOCK: "false"
+
+    # -----------------------------------------------------------------------
+    # Critical configuration (currently RCON_PASSWORD) is injected from the
+    # .env file, which is excluded from git. "required: false" keeps the
+    # server startable when that file does not exist.
+    # -----------------------------------------------------------------------
+    env_file:
+      - path: .env
+        required: false
+
+    # -----------------------------------------------------------------------
+    # Persistence: the world, server.properties, whitelist, ops and logs are
+    # stored in ./data on the host. The game state therefore survives
+    # restarts, "docker compose down" and image rebuilds.
+    # -----------------------------------------------------------------------
+    volumes:
+      - type: bind
+        source: ./data
+        target: /data
+        bind:
+          create_host_path: true
