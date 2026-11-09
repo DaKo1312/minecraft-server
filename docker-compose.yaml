@@ -57,7 +57,7 @@ services:
     # -----------------------------------------------------------------------
     environment:
       EULA: "true"
-      JAVA_MEMORY: "2G"
+      JAVA_MEMORY: "${JAVA_MEMORY:-2G}"
       JAVA_OPTS: ""
       MOTD: "Minecraft Server (Docker)"
       DIFFICULTY: "normal"

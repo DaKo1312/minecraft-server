@@ -161,7 +161,7 @@ no authentication data and are safe to track in git.
 | Variable | Default | `server.properties` key | Description |
 |---|---|---|---|
 | `EULA` | `true` | *(writes `eula.txt`)* | Accepts the [Minecraft EULA](https://www.minecraft.net/eula). The server refuses to run without it. |
-| `JAVA_MEMORY` | `2G` | *(JVM flag)* | Java heap size, used for both `-Xms` and `-Xmx`, e.g. `1G`, `4G`. |
+| `JAVA_MEMORY` | `2G` | *(JVM flag)* | Java heap size, used for both `-Xms` and `-Xmx`, e.g. `1G`, `4G`. Can be overridden per machine through `.env`, because hosts differ in available memory. |
 | `JAVA_OPTS` | *(empty)* | *(JVM flags)* | Additional JVM flags, separated by spaces. |
 | `MOTD` | `Minecraft Server (Docker)` | `motd` | Text shown in the server list of the client. |
 | `DIFFICULTY` | `normal` | `difficulty` | `peaceful`, `easy`, `normal` or `hard`. |
@@ -207,6 +207,11 @@ chmod 600 .env
 | `RCON_PASSWORD` | *(empty)* | Password for the remote console. Empty keeps RCON switched off. |
 | `MINECRAFT_VERSION` | `26.3` | Optional override of the built Minecraft version. |
 | `MC_HOST_PORT` | `8888` | Optional override of the published host port. |
+| `JAVA_MEMORY` | `2G` | Optional override of the Java heap size. Useful on a host that cannot spare 2 GB, for example `1536M`. |
+
+Only `RCON_PASSWORD` is actually critical. The other three are non-critical
+values that live here because they differ per machine, which keeps the tracked
+files identical across all deployments.
 
 Generate a strong RCON password and apply it:
 
