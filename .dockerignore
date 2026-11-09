@@ -1,0 +1,17 @@
+# Keep the build context small: none of this is needed to build the image.
+# Without this file the whole world in data/ would be sent to the Docker
+# daemon on every build, which makes builds slow for no reason.
+.git
+.gitignore
+.dockerignore
+.env
+*.env
+!.env.example
+data/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+README.md
+check_status.py
+requirements.txt
