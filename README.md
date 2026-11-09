@@ -17,6 +17,7 @@ image and deployed with Docker Compose. No pre-built Minecraft image is used.
   - [Console and operator rights](#console-and-operator-rights)
   - [Restart behaviour](#restart-behaviour)
 - [Testing](#testing)
+- [Security](#security)
 
 ## Description
 
@@ -245,3 +246,14 @@ docker compose down && docker compose up --detach --force-recreate   # restore
 
 The results of these runs are recorded in
 [docs/checklist.md](docs/checklist.md).
+
+## Security
+
+- No secrets, IP addresses or user names are tracked; the documentation uses
+  placeholders such as `<SERVER_IP>`.
+- Critical configuration reaches the container only through the untracked
+  `.env`.
+- The server process runs unprivileged; root is dropped before it starts.
+- `server.jar` is verified against the SHA1 checksum from Mojang at build time.
+- Only the game port is published. RCON stays internal and is off by default.
+- `ONLINE_MODE` defaults to `true`, so accounts are verified with Mojang.
