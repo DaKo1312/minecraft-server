@@ -1,0 +1,3 @@
+# Dependency of check_status.py (see README.md -> Testing).
+# Installed into a local virtual environment, not into the container.
+mcstatus==14.2.0

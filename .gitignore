@@ -6,8 +6,10 @@
 !.env.example
 
 # ---------------------------------------------------------------------------
-# Runtime data of the Minecraft server (world, logs, generated configuration)
-# This is created by the container on first start and is machine specific.
+# Runtime data of the Minecraft server (world, logs, generated configuration).
+# It lives in the named volume "mc-data", which Docker keeps outside this
+# directory. The rule stays as a safety net, so that a ./data directory can
+# never be committed by accident.
 # ---------------------------------------------------------------------------
 data/
 

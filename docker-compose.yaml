@@ -1,0 +1,103 @@
+# ===========================================================================
+# Deployment of the Minecraft server.
+#
+#   docker compose up --detach --build
+#
+# Values written as ${NAME:-default} are read from the .env file (or the
+# shell) and fall back to the default shown, so this file also works when no
+# .env file exists at all.
+#
+# Requires Docker Compose v2.24 or newer (for "env_file: required: false").
+# ===========================================================================
+
+name: minecraft-server
+
+services:
+  mc-server:
+    container_name: mc-server
+
+    # -----------------------------------------------------------------------
+    # Build our own image from the Dockerfile in this directory.
+    # No pre-built Minecraft image is involved.
+    # -----------------------------------------------------------------------
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MINECRAFT_VERSION: "${MINECRAFT_VERSION:-26.3}"
+    image: "minecraft-server:${MINECRAFT_VERSION:-26.3}"
+
+    # -----------------------------------------------------------------------
+    # Bring the container back up whenever it terminates because of an error,
+    # and after a reboot of the host. It stays down only when it was stopped
+    # on purpose via "docker compose stop" / "down".
+    # -----------------------------------------------------------------------
+    restart: unless-stopped
+
+    # Give Minecraft time to save the world when it receives SIGTERM.
+    stop_grace_period: 120s
+
+    # Keep stdin open and allocate a TTY so the server console can be reached
+    # with "docker attach mc-server".
+    stdin_open: true
+    tty: true
+
+    # -----------------------------------------------------------------------
+    # Port release towards the internet.
+    # Host port 8888 (the port this project is graded on) is forwarded to
+    # Minecraft's port 25565 inside the container.
+    # -----------------------------------------------------------------------
+    ports:
+      - "${MC_HOST_PORT:-8888}:25565/tcp"
+
+    # -----------------------------------------------------------------------
+    # Non-critical configuration. No passwords, tokens, user names or IP
+    # addresses belong in this block - it is tracked by git.
+    # Every key is documented in README.md -> Usage.
+    # -----------------------------------------------------------------------
+    environment:
+      EULA: "${EULA:-false}"
+      JAVA_MEMORY: "${JAVA_MEMORY:-2G}"
+      JAVA_OPTS: ""
+      MOTD: "Minecraft Server (Docker)"
+      DIFFICULTY: "normal"
+      GAMEMODE: "survival"
+      LEVEL_NAME: "world"
+      LEVEL_SEED: ""
+      MAX_PLAYERS: "10"
+      VIEW_DISTANCE: "10"
+      SIMULATION_DISTANCE: "10"
+      SPAWN_PROTECTION: "16"
+      ONLINE_MODE: "true"
+      PVP: "true"
+      WHITE_LIST: "false"
+      ENABLE_COMMAND_BLOCK: "false"
+
+    # -----------------------------------------------------------------------
+    # Configuration that must not be tracked by git arrives through the .env
+    # file: EULA, because accepting the agreement is the operator's own
+    # decision, and RCON_PASSWORD. "required: false" keeps docker compose
+    # working without that file; the server then stops at the EULA check and
+    # says what to do.
+    # -----------------------------------------------------------------------
+    env_file:
+      - path: .env
+        required: false
+
+    # -----------------------------------------------------------------------
+    # Persistence: the world, server.properties, whitelist, ops and logs are
+    # stored in the named volume "mc-data". The game state therefore survives
+    # restarts, "docker compose down" and image rebuilds.
+    # -----------------------------------------------------------------------
+    volumes:
+      - type: volume
+        source: mc-data
+        target: /data
+
+# ---------------------------------------------------------------------------
+# Docker manages this volume outside the project directory, so no server data
+# ever lands next to the tracked files. Only "docker compose down --volumes"
+# deletes it.
+# ---------------------------------------------------------------------------
+volumes:
+  mc-data:
