@@ -51,7 +51,7 @@ deliberately not a working value: `EULA` is `false`, and `entrypoint.sh` stops
 with an explanatory message until the operator sets it to `true`, because
 accepting the agreement is not a decision the image may make on their behalf.
 Verified by starting the image with `EULA=true` as the only variable, no `.env`
-file and no volume at all: the server reached `Done` after 12 seconds.
+file and no volume at all: the server reached `Done` after 17 seconds.
 
 ### docker-compose.yaml
 
