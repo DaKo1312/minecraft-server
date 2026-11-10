@@ -28,7 +28,6 @@ running container.
 
 ## Table of Contents
 
-- [Repository Contents](#repository-contents)
 - [Quickstart](#quickstart)
 - [Usage](#usage)
   - [Configuration](#configuration)
@@ -39,28 +38,9 @@ running container.
   - [Persistence and backups](#persistence-and-backups)
   - [Console and operator rights](#console-and-operator-rights)
   - [Restart behaviour](#restart-behaviour)
+- [Repository Contents](#repository-contents)
 - [Testing](#testing)
 - [Security](#security)
-
-## Repository Contents
-
-| File | Description |
-|---|---|
-| `Dockerfile` | Two-stage build: downloads and verifies `server.jar`, the Fabric loader and the mods, installs the Java runtime, creates the unprivileged account, defines all defaults. |
-| `mods.txt` | The mods that go into the image, each pinned to one version and one SHA512 checksum. |
-| `entrypoint.sh` | Refuses to start without an accepted EULA, writes the Fabric launcher properties and the environment-driven keys of `server.properties`, enables RCON when a password exists, drops root and execs the server as PID 1. |
-| `docker-compose.yaml` | The `mc-server` service: build args, published port, environment, optional `.env`, volume, restart policy. |
-| `.env.example` | Template for the untracked `.env` holding the critical configuration. |
-| `.gitignore` | Excludes runtime data, the real `.env`, virtual environments and credential files. |
-| `.dockerignore` | Keeps `data/` out of the build context. |
-| `check_status.py` | Reachability check via [mcstatus](https://github.com/py-mine/mcstatus). |
-| `requirements.txt` | Pinned dependency of `check_status.py`. |
-| `docs/checklist.md` | Course submission checklist with every requirement marked and the verification results. |
-| `docs/checklist.pdf` | Export of `docs/checklist.md` for handing in. |
-| `README.md` | This documentation. |
-
-Created outside the repository at runtime: the Docker volume `mc-data` (world,
-config, logs) and `.venv/`.
 
 ## Quickstart
 
@@ -260,6 +240,26 @@ On `docker compose stop` the server receives `SIGTERM` directly, because
 `entrypoint.sh` execs it as PID 1, and saves the world before exiting. The TTY
 closes at the same moment, so the last log lines are usually cut off while the
 save still completes.
+
+## Repository Contents
+
+| File | Description |
+|---|---|
+| `Dockerfile` | Two-stage build: downloads and verifies `server.jar`, the Fabric loader and the mods, installs the Java runtime, creates the unprivileged account, defines all defaults. |
+| `mods.txt` | The mods that go into the image, each pinned to one version and one SHA512 checksum. |
+| `entrypoint.sh` | Refuses to start without an accepted EULA, writes the Fabric launcher properties and the environment-driven keys of `server.properties`, enables RCON when a password exists, drops root and execs the server as PID 1. |
+| `docker-compose.yaml` | The `mc-server` service: build args, published port, environment, optional `.env`, volume, restart policy. |
+| `.env.example` | Template for the untracked `.env` holding the critical configuration. |
+| `.gitignore` | Excludes runtime data, the real `.env`, virtual environments and credential files. |
+| `.dockerignore` | Keeps `data/` out of the build context. |
+| `check_status.py` | Reachability check via [mcstatus](https://github.com/py-mine/mcstatus). |
+| `requirements.txt` | Pinned dependency of `check_status.py`. |
+| `docs/checklist.md` | Course submission checklist with every requirement marked and the verification results. |
+| `docs/checklist.pdf` | Export of `docs/checklist.md` for handing in. |
+| `README.md` | This documentation. |
+
+Created outside the repository at runtime: the Docker volume `mc-data` (world,
+config, logs) and `.venv/`.
 
 ## Testing
 
