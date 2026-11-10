@@ -56,7 +56,7 @@ services:
     # Every key is documented in README.md -> Usage.
     # -----------------------------------------------------------------------
     environment:
-      EULA: "true"
+      EULA: "${EULA:-false}"
       JAVA_MEMORY: "${JAVA_MEMORY:-2G}"
       JAVA_OPTS: ""
       MOTD: "Minecraft Server (Docker)"
@@ -74,9 +74,11 @@ services:
       ENABLE_COMMAND_BLOCK: "false"
 
     # -----------------------------------------------------------------------
-    # Critical configuration (currently RCON_PASSWORD) is injected from the
-    # .env file, which is excluded from git. "required: false" keeps the
-    # server startable when that file does not exist.
+    # Configuration that must not be tracked by git arrives through the .env
+    # file: EULA, because accepting the agreement is the operator's own
+    # decision, and RCON_PASSWORD. "required: false" keeps docker compose
+    # working without that file; the server then stops at the EULA check and
+    # says what to do.
     # -----------------------------------------------------------------------
     env_file:
       - path: .env

@@ -40,7 +40,8 @@ running container.
   the volume, and all of them are server-side only, so an unmodified client can
   join.
 - **Unprivileged.** The server runs as the system account `minecraft` (UID 999).
-- **Always startable.** Every setting has a default in the image.
+- **Opt-in EULA.** Nothing starts until the operator accepts the Minecraft
+  EULA; every other setting has a default in the image.
 - **Persistent.** World, config and logs live in a bind mount on the host.
 - **Self-healing.** `restart: unless-stopped` recovers from crashes and reboots.
 
@@ -50,7 +51,7 @@ running container.
 |---|---|
 | `Dockerfile` | Two-stage build: downloads and verifies `server.jar`, the Fabric loader and the mods, installs the Java runtime, creates the unprivileged account, defines all defaults. |
 | `mods.txt` | The mods that go into the image, each pinned to one version and one SHA512 checksum. |
-| `entrypoint.sh` | Writes `eula.txt`, the Fabric launcher properties and the environment-driven keys of `server.properties`, enables RCON when a password exists, drops root and execs the server as PID 1. |
+| `entrypoint.sh` | Refuses to start without an accepted EULA, writes the Fabric launcher properties and the environment-driven keys of `server.properties`, enables RCON when a password exists, drops root and execs the server as PID 1. |
 | `docker-compose.yaml` | The `mc-server` service: build args, published port, environment, optional `.env`, volume, restart policy. |
 | `.env.example` | Template for the untracked `.env` holding the critical configuration. |
 | `.gitignore` | Excludes runtime data, the real `.env`, virtual environments and credential files. |
@@ -71,6 +72,7 @@ group, at least 3 GB RAM.
 
 ```bash
 git clone <REPOSITORY_URL> minecraft-server && cd minecraft-server
+cp .env.example .env                       # then set EULA=true in .env
 docker compose up --detach --build
 docker compose logs --follow mc-server     # wait for: Done (...)! For help, type "help"
 ```
@@ -84,7 +86,7 @@ pip install --requirement requirements.txt
 python check_status.py <SERVER_IP>
 ```
 
-No `.env` file is required; create one only to enable RCON.
+The `.env` file is where the EULA is accepted; RCON is switched on there too.
 
 ## Usage
 
@@ -101,7 +103,7 @@ lasting effect — change it in `docker-compose.yaml` instead.
 
 | Variable | Default | Description |
 |---|---|---|
-| `EULA` | `true` | Accepts the [Minecraft EULA](https://www.minecraft.net/eula). Required to start. |
+| `EULA` | `false` | Set it to `true` in `.env` to accept the [Minecraft EULA](https://www.minecraft.net/eula). The server refuses to start otherwise. |
 | `JAVA_MEMORY` | `2G` | Heap size for `-Xms` and `-Xmx`. Overridable per machine via `.env`. |
 | `JAVA_OPTS` | *(empty)* | Extra JVM flags, space separated. |
 | `MOTD` | `Minecraft Server (Docker)` | Text in the client server list. |
@@ -179,18 +181,20 @@ it.
 ### Secrets via .env
 
 Passwords and tokens are never tracked. `cp .env.example .env && chmod 600 .env`,
-then set what you need. The file is declared `required: false`, so the server
-still starts without it.
+then set what you need. The file is declared `required: false`, so `docker
+compose` works without it; the server then stops at the EULA check and says so.
 
 | Variable | Description |
 |---|---|
+| `EULA` | Set to `true` to accept the [Minecraft EULA](https://www.minecraft.net/eula). Nothing starts without it. |
 | `RCON_PASSWORD` | Remote console password. Empty keeps RCON off. RCON stays on the container network and is never published. |
 | `MINECRAFT_VERSION` | Overrides the built version (needs a rebuild). |
 | `MC_HOST_PORT` | Overrides the published host port. |
 | `JAVA_MEMORY` | Overrides the heap size, e.g. `1536M` on a small host. |
 
-Only `RCON_PASSWORD` is genuinely critical; the rest live here because they
-differ per machine, which keeps the tracked files identical everywhere.
+`EULA` and `RCON_PASSWORD` are the two that belong here by nature; the rest
+live here because they differ per machine, which keeps the tracked files
+identical everywhere.
 
 ### Changing the port
 

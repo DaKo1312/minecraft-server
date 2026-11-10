@@ -116,11 +116,13 @@ ENV SERVER_HOME="/opt/minecraft" \
     SERVER_GROUP="minecraft"
 
 # ---------------------------------------------------------------------------
-# Default values for every runtime setting, so the container always starts
-# even when docker-compose.yaml or the .env file provide nothing at all.
-# docker-compose.yaml overrides the non-critical ones.
+# Default values for every runtime setting, so the container needs no
+# configuration at all - except for the one decision the image must not make
+# on behalf of whoever runs it. EULA therefore defaults to "false" and
+# entrypoint.sh refuses to start the server until it is set to "true".
+# docker-compose.yaml overrides the non-critical values.
 # ---------------------------------------------------------------------------
-ENV EULA="true" \
+ENV EULA="false" \
     JAVA_MEMORY="2G" \
     JAVA_OPTS="" \
     SERVER_PORT="25565" \

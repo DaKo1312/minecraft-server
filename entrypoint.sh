@@ -3,7 +3,7 @@
 # Entrypoint of the Minecraft server container.
 #
 # What it does, in order:
-#   1. Accept the Minecraft EULA (required by the server application).
+#   1. Refuse to start unless the operator has accepted the Minecraft EULA.
 #   2. Tell the Fabric mod loader which server application to start.
 #   3. Write the settings that come from environment variables into
 #      /data/server.properties. Keys that are NOT managed here are left
@@ -28,7 +28,7 @@ DATA_DIR="${DATA_DIR:-/data}"
 SERVER_USER="${SERVER_USER:-minecraft}"
 SERVER_GROUP="${SERVER_GROUP:-minecraft}"
 
-EULA="${EULA:-true}"
+EULA="${EULA:-false}"
 JAVA_MEMORY="${JAVA_MEMORY:-2G}"
 JAVA_OPTS="${JAVA_OPTS:-}"
 SERVER_PORT="${SERVER_PORT:-25565}"
@@ -101,9 +101,19 @@ cd "${DATA_DIR}"
 
 # ---------------------------------------------------------------------------
 # 1. EULA
+#
+# Accepting the agreement is the operator's decision, not the image's, so the
+# server does not start until EULA is set to "true" from the outside.
 # ---------------------------------------------------------------------------
-log "Accepting the Minecraft EULA (EULA=${EULA})"
-printf 'eula=%s\n' "${EULA}" > "${EULA_FILE}"
+if [ "${EULA}" != "true" ]; then
+    log "ERROR: the Minecraft EULA has not been accepted, refusing to start."
+    log "       Read https://www.minecraft.net/eula and, if you agree, set"
+    log "       EULA=true in the .env file next to docker-compose.yaml."
+    exit 1
+fi
+
+log "Minecraft EULA accepted (EULA=${EULA})"
+printf 'eula=true\n' > "${EULA_FILE}"
 
 # ---------------------------------------------------------------------------
 # 2. Fabric

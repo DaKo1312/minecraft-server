@@ -45,9 +45,12 @@ installed into a plain base image rather than inherited from a ready-made
 Minecraft image. `curl` and `jq` are absent from the shipped image.
 
 Every runtime setting has a default in the `ENV` block of the `Dockerfile`, and
-`entrypoint.sh` repeats the same defaults as a fallback. Verified by starting the
-image with no environment, no `.env` file and no volume at all: the server
-reached `Done` after 12 seconds.
+`entrypoint.sh` repeats the same defaults as a fallback. One default is
+deliberately not a working value: `EULA` is `false`, and `entrypoint.sh` stops
+with an explanatory message until the operator sets it to `true`, because
+accepting the agreement is not a decision the image may make on their behalf.
+Verified by starting the image with `EULA=true` as the only variable, no `.env`
+file and no volume at all: the server reached `Done` after 12 seconds.
 
 ### docker-compose.yaml
 
@@ -58,10 +61,11 @@ reached `Done` after 12 seconds.
 
 **Notes.** The single service is named `mc-server`. Its `environment` block holds
 only non-critical values and contains no password, token, user name or IP
-address. The critical configuration arrives through an optional `.env` file
-declared with `required: false`, so the service also starts when that file does
-not exist. Host port `8888` is published onto the container port `25565`. A bind
-mount maps `./data` to `/data`, which holds the world, `server.properties`,
+address. The configuration that must not be tracked arrives through the
+`.env` file, declared with `required: false`: `EULA`, because accepting the
+agreement is the operator's own decision, and `RCON_PASSWORD`. Host port `8888`
+is published onto the container port `25565`. A bind mount maps `./data` to
+`/data`, which holds the world, `server.properties`,
 `ops.json`, `whitelist.json` and the logs.
 
 ### README.md
@@ -164,7 +168,7 @@ Docker Compose v5.6.1). All checks below were executed against that deployment.
 | Configuration survives a restart | `allow-flight=true` set by hand in `server.properties`, then container recreated | key still `true`; keys managed by environment variables are rewritten from the environment by design, which is documented in the README |
 | Restart after a failure | server application moved away to force a non-zero exit, then `docker restart` | `RestartCount` rose to `7` with `ExitCode=1`; container restored from the unmodified image afterwards |
 | Restart survives a host reboot | `systemctl is-enabled docker` together with `restart: unless-stopped` | `enabled`, so the container comes back after a reboot of the VM |
-| Server always starts | image started with no environment, no `.env` and no volume | reached `Done` after 12 seconds |
+| Server starts from its defaults | image started with `EULA=true` as the only variable, no `.env` and no volume | reached `Done` after 12 seconds |
 | Process is unprivileged | `grep ^Uid: /proc/1/status` inside the container | `999`, the `minecraft` account, not `0` |
 | Server application is authentic | SHA1 comparison during the build | `server.jar: OK` |
 | Mods are authentic | SHA512 comparison during the build | one `OK` per entry in `mods.txt` |
