@@ -125,7 +125,7 @@ printf 'eula=true\n' > "${EULA_FILE}"
 #
 # The mods are loaded straight out of the image instead of from the volume, so
 # the image alone decides which mods run and no stale jar can survive in
-# ./data after it was removed from mods.txt.
+# /data after it was removed from mods.txt.
 # ---------------------------------------------------------------------------
 log "Fabric loader will start the server application at ${SERVER_JAR}"
 printf 'serverJar=%s\n' "${SERVER_JAR}" > "${LAUNCHER_PROPERTIES_FILE}"

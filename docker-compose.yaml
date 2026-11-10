@@ -86,12 +86,18 @@ services:
 
     # -----------------------------------------------------------------------
     # Persistence: the world, server.properties, whitelist, ops and logs are
-    # stored in ./data on the host. The game state therefore survives
+    # stored in the named volume "mc-data". The game state therefore survives
     # restarts, "docker compose down" and image rebuilds.
     # -----------------------------------------------------------------------
     volumes:
-      - type: bind
-        source: ./data
+      - type: volume
+        source: mc-data
         target: /data
-        bind:
-          create_host_path: true
+
+# ---------------------------------------------------------------------------
+# Docker manages this volume outside the project directory, so no server data
+# ever lands next to the tracked files. Only "docker compose down --volumes"
+# deletes it.
+# ---------------------------------------------------------------------------
+volumes:
+  mc-data:

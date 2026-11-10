@@ -42,7 +42,7 @@ running container.
 - **Unprivileged.** The server runs as the system account `minecraft` (UID 999).
 - **Opt-in EULA.** Nothing starts until the operator accepts the Minecraft
   EULA; every other setting has a default in the image.
-- **Persistent.** World, config and logs live in a bind mount on the host.
+- **Persistent.** World, config and logs live in the named volume `mc-data`.
 - **Self-healing.** `restart: unless-stopped` recovers from crashes and reboots.
 
 ## Repository Contents
@@ -62,7 +62,8 @@ running container.
 | `docs/checklist.pdf` | Export of `docs/checklist.md` for handing in. |
 | `README.md` | This documentation. |
 
-Created at runtime and untracked: `data/` (world, config, logs) and `.venv/`.
+Created outside the repository at runtime: the Docker volume `mc-data` (world,
+config, logs) and `.venv/`.
 
 ## Quickstart
 
@@ -96,7 +97,7 @@ Settings pass through three layers, each overriding the one above: defaults in
 the `Dockerfile`, then the `environment` block of `docker-compose.yaml`, then
 the untracked `.env`.
 
-On every start `entrypoint.sh` writes the result into `data/server.properties`.
+On every start `entrypoint.sh` writes the result into `/data/server.properties`.
 It rewrites only the keys below and leaves every other line alone, so hand-tuned
 settings survive. The flip side: editing one of these keys by hand has no
 lasting effect — change it in `docker-compose.yaml` instead.
@@ -109,7 +110,7 @@ lasting effect — change it in `docker-compose.yaml` instead.
 | `MOTD` | `Minecraft Server (Docker)` | Text in the client server list. |
 | `DIFFICULTY` | `normal` | `peaceful`, `easy`, `normal`, `hard`. |
 | `GAMEMODE` | `survival` | `survival`, `creative`, `adventure`, `spectator`. |
-| `LEVEL_NAME` | `world` | World directory inside `data/`. |
+| `LEVEL_NAME` | `world` | World directory inside `/data`. |
 | `LEVEL_SEED` | *(empty)* | Generation seed; empty means random. Only applies to a new world. |
 | `MAX_PLAYERS` | `10` | Simultaneous players. |
 | `VIEW_DISTANCE` | `10` | Sent chunk radius. Lower reduces CPU and bandwidth. |
@@ -117,7 +118,7 @@ lasting effect — change it in `docker-compose.yaml` instead.
 | `SPAWN_PROTECTION` | `16` | Radius only operators may edit; `0` disables. |
 | `ONLINE_MODE` | `true` | Verifies accounts with Mojang. Keep enabled. |
 | `PVP` | `true` | Players can damage each other. |
-| `WHITE_LIST` | `false` | Restricts logins to the names in `data/whitelist.json`. Minecraft 26.3 turns this on by default, which locks out every player; the default here keeps the server joinable. |
+| `WHITE_LIST` | `false` | Restricts logins to the names in `/data/whitelist.json`. Minecraft 26.3 turns this on by default, which locks out every player; the default here keeps the server joinable. |
 | `ENABLE_COMMAND_BLOCK` | `false` | Allows command blocks. |
 | `RCON_PORT` | `25575` | Container-internal RCON port, never published. |
 
@@ -151,12 +152,12 @@ above; a game client needs `/spark tps`. See
 the console.
 
 The loader does not replace the server application. `entrypoint.sh` writes
-`data/fabric-server-launcher.properties` with `serverJar` pointing at the
+`/data/fabric-server-launcher.properties` with `serverJar` pointing at the
 verified Mojang `server.jar`, and passes `-Dfabric.addMods` so the four mods
 above are loaded straight out of the image. They are part of the image, not of
 the volume, which is why a rebuild is what changes them.
 
-Fabric also reads `data/mods`, which stays empty here. A jar dropped in there
+Fabric also reads `/data/mods`, which stays empty here. A jar dropped in there
 is loaded as well, which is handy for trying a mod out, but it is not
 reproducible: anything that should stay belongs in `mods.txt`.
 
@@ -227,17 +228,20 @@ If it differs from `25`, adjust the `JAVA_MAJOR_VERSION` build argument in the
 
 ### Persistence and backups
 
-`./data` is bind-mounted to `/data` and holds the world, `server.properties`,
-`ops.json`, `whitelist.json` and the logs. The game state therefore survives
-`docker compose down`, image rebuilds and host reboots.
+The named volume `mc-data` is mounted at `/data` and holds the world,
+`server.properties`, `ops.json`, `whitelist.json` and the logs. Docker keeps it
+outside the project directory, so the game state survives `docker compose down`,
+image rebuilds and host reboots; only `docker compose down --volumes` deletes
+it.
 
 ```bash
 docker compose stop
-sudo tar --create --gzip --file "mc-backup-$(date +%F).tar.gz" data/
+docker compose cp mc-server:/data "mc-backup-$(date +%F)"
 docker compose start
 ```
 
-To start a fresh world, stop the server and remove `data/world` only.
+To start over with a fresh world, delete the volume with
+`docker compose down --volumes` and bring the server up again.
 
 ### Console and operator rights
 
@@ -318,4 +322,4 @@ The results of these runs are recorded in
 - Only the game port is published. RCON stays internal and is off by default.
 - `ONLINE_MODE` defaults to `true`, so accounts are verified with Mojang.
 - The server is open to any verified account. To limit it to known players, set
-  `WHITE_LIST=true` and add them to `data/whitelist.json`.
+  `WHITE_LIST=true` and add them to `/data/whitelist.json`.

@@ -21,10 +21,11 @@ this repository where the requirement is met.
 - [x] Eine Datei namens `README.md` ist vorhanden und entsprechend der Kriterien unten erstellt worden
 - [x] Es befinden sich keine weiteren Dateien im Repository, ohne dass diese explizit in der `README.md` benannt und beschrieben werden
 
-**Notes.** `.gitignore` excludes the runtime data in `data/`, the real `.env`,
-Python virtual environments, archives and credential files. Every tracked file
-is listed and described in the *Repository Contents* table of `README.md`,
-including this checklist and its PDF export.
+**Notes.** `.gitignore` excludes the real `.env`, Python virtual environments,
+archives, credential files and any `data/` directory; the server's own runtime
+data lives in the named volume `mc-data`, outside the project directory. Every
+tracked file is listed and described in the *Repository Contents* table of
+`README.md`, including this checklist and its PDF export.
 
 ### Dockerfile
 
@@ -64,9 +65,9 @@ only non-critical values and contains no password, token, user name or IP
 address. The configuration that must not be tracked arrives through the
 `.env` file, declared with `required: false`: `EULA`, because accepting the
 agreement is the operator's own decision, and `RCON_PASSWORD`. Host port `8888`
-is published onto the container port `25565`. A bind mount maps `./data` to
-`/data`, which holds the world, `server.properties`,
-`ops.json`, `whitelist.json` and the logs.
+is published onto the container port `25565`. The named volume `mc-data` is
+mounted at `/data` and holds the world, `server.properties`, `ops.json`,
+`whitelist.json` and the logs.
 
 ### README.md
 
