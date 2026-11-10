@@ -70,9 +70,10 @@ The `.env` file is where the EULA is accepted; RCON is switched on there too.
 
 ### Configuration
 
-Settings pass through three layers, each overriding the one above: defaults in
-the `Dockerfile`, then the `environment` block of `docker-compose.yaml`, then
-the untracked `.env`.
+Settings pass through three layers: the `Dockerfile` gives every one of them a
+default, the `environment` block of `docker-compose.yaml` overrides what this
+deployment sets, and the untracked `.env` has the last word wherever that block
+reads a variable (`EULA`, `JAVA_MEMORY`) or stays silent (`RCON_PASSWORD`).
 
 On every start `entrypoint.sh` writes the result into `/data/server.properties`.
 It rewrites only the keys below and leaves every other line alone, so hand-tuned
