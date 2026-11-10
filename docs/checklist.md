@@ -167,9 +167,10 @@ Docker Compose v5.6.1). All checks below were executed against that deployment.
 | Script-based connection | `check_status.py`, which performs a Server List Ping through `mcstatus` | exit code `0` |
 | World survives a restart | marker file placed in the world, then `docker compose down` followed by `up` | marker present, and `No existing world data` appears `0` times, so the world was reused rather than regenerated |
 | Configuration survives a restart | `allow-flight=true` set by hand in `server.properties`, then container recreated | key still `true`; keys managed by environment variables are rewritten from the environment by design, which is documented in the README |
-| Restart after a failure | server application moved away to force a non-zero exit, then `docker restart` | `RestartCount` rose to `7` with `ExitCode=1`; container restored from the unmodified image afterwards |
+| Restart after a failure | server application moved away to force a non-zero exit, then `docker restart` | `RestartCount` rose to `8` with `ExitCode=1`; container restored from the unmodified image afterwards |
 | Restart survives a host reboot | `systemctl is-enabled docker` together with `restart: unless-stopped` | `enabled`, so the container comes back after a reboot of the VM |
-| Server starts from its defaults | image started with `EULA=true` as the only variable, no `.env` and no volume | reached `Done` after 12 seconds |
+| Server starts from its defaults | image started with `EULA=true` as the only variable, no `.env` and no volume | reached `Done` after 17 seconds |
+| EULA not accepted | image started without the `EULA` variable | exit code `1`, the log names the agreement and the server application is never launched |
 | Process is unprivileged | `grep ^Uid: /proc/1/status` inside the container | `999`, the `minecraft` account, not `0` |
 | Server application is authentic | SHA1 comparison during the build | `server.jar: OK` |
 | Mods are authentic | SHA512 comparison during the build | one `OK` per entry in `mods.txt` |
