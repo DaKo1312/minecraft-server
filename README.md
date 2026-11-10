@@ -4,25 +4,6 @@ A **Minecraft Java Edition** server with the Fabric mod loader and a small set
 of pinned server-side mods, built from a plain Debian base image and deployed
 with Docker Compose. No pre-built Minecraft image is used.
 
-## Table of Contents
-
-- [Description](#description)
-- [Repository Contents](#repository-contents)
-- [Quickstart](#quickstart)
-- [Usage](#usage)
-  - [Configuration](#configuration)
-  - [Mods](#mods)
-  - [Secrets via .env](#secrets-via-env)
-  - [Changing the port](#changing-the-port)
-  - [Changing the Minecraft version](#changing-the-minecraft-version)
-  - [Persistence and backups](#persistence-and-backups)
-  - [Console and operator rights](#console-and-operator-rights)
-  - [Restart behaviour](#restart-behaviour)
-- [Testing](#testing)
-- [Security](#security)
-
-## Description
-
 Everything needed to build, configure and run a Minecraft server in a container
 on a cloud VM. The purpose is reproducibility: the same commands produce the
 same server on any Docker host, the world survives restarts and rebuilds, and
@@ -44,6 +25,22 @@ running container.
   EULA; every other setting has a default in the image.
 - **Persistent.** World, config and logs live in the named volume `mc-data`.
 - **Self-healing.** `restart: unless-stopped` recovers from crashes and reboots.
+
+## Table of Contents
+
+- [Repository Contents](#repository-contents)
+- [Quickstart](#quickstart)
+- [Usage](#usage)
+  - [Configuration](#configuration)
+  - [Mods](#mods)
+  - [Secrets via .env](#secrets-via-env)
+  - [Changing the port](#changing-the-port)
+  - [Changing the Minecraft version](#changing-the-minecraft-version)
+  - [Persistence and backups](#persistence-and-backups)
+  - [Console and operator rights](#console-and-operator-rights)
+  - [Restart behaviour](#restart-behaviour)
+- [Testing](#testing)
+- [Security](#security)
 
 ## Repository Contents
 
